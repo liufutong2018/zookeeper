@@ -440,7 +440,9 @@ public class ClientCnxn {
     }
 
     public void start() {
+        // 开启连接请求发送线程，即执行该线程的run()
         sendThread.start();
+        // 开启事件处理线程
         eventThread.start();
     }
 
@@ -1131,7 +1133,7 @@ public class ClientCnxn {
         private int pingRwTimeout = minPingRwTimeout;
 
         // Set to true if and only if constructor of ZooKeeperSaslClient
-        // throws a LoginException: see startConnect() below.
+        // throws a LoginException: see startConnect() below. 开始连接
         private boolean saslLoginFailed = false;
 
         private void startConnect(InetSocketAddress addr) throws IOException {
@@ -1144,11 +1146,14 @@ public class ClientCnxn {
                     LOG.warn("Unexpected exception", e);
                 }
             }
+            // 修改server状态
             changeZkState(States.CONNECTING);
 
             String hostPort = addr.getHostString() + ":" + addr.getPort();
             MDC.put("myid", hostPort);
+            // 设置连接名称
             setName(getName().replaceAll("\\(.*\\)", "(" + hostPort + ")"));
+            // 判断是否开启了SASL的客户端验证机制（C/S模式的验证机制）
             if (clientConfig.isSaslClientEnabled()) {
                 try {
                     if (zooKeeperSaslClient != null) {
@@ -1169,7 +1174,7 @@ public class ClientCnxn {
                 }
             }
             logStartConnect(addr);
-
+            // 连接
             clientCnxnSocket.connect(addr);
         }
 
@@ -1180,6 +1185,7 @@ public class ClientCnxn {
             }
         }
 
+        // SendThread 的run()，开启连接请求发送线程
         @Override
         @SuppressFBWarnings("JLM_JSR166_UTILCONCURRENT_MONITORENTER")
         public void run() {
@@ -1190,8 +1196,10 @@ public class ClientCnxn {
             long lastPingRwServer = Time.currentElapsedTime();
             final int MAX_SEND_PING_INTERVAL = 10000; //10 seconds
             InetSocketAddress serverAddress = null;
+            // 只要连接状态为激活状态，没关闭，也没有验证失败，就一直循环
             while (state.isAlive()) {
                 try {
+                    // 处理没有连接上的情况
                     if (!clientCnxnSocket.isConnected()) {
                         // don't re-establish connection if we are closing
                         if (closing) {
@@ -1201,9 +1209,11 @@ public class ClientCnxn {
                             serverAddress = rwServerAddress;
                             rwServerAddress = null;
                         } else {
+                            // 获取要连接server地址❤
                             serverAddress = hostProvider.next(1000);
                         }
                         onConnecting(serverAddress);
+                        // 开始连接❤
                         startConnect(serverAddress);
                         // Update now to start the connection timer right after we make a connection attempt
                         clientCnxnSocket.updateNow();

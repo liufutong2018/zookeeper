@@ -644,6 +644,7 @@ public class ZooKeeper implements AutoCloseable {
         this.hostProvider = hostProvider;
         ConnectStringParser connectStringParser = new ConnectStringParser(connectString);
 
+        // 创建一个对server的连接
         cnxn = createConnection(
             connectStringParser.getChrootPath(),
             hostProvider,
@@ -652,6 +653,7 @@ public class ZooKeeper implements AutoCloseable {
             watcher,
             getClientCnxnSocket(),
             canBeReadOnly);
+        // 开始连接
         cnxn.start();
     }
 
@@ -725,12 +727,13 @@ public class ZooKeeper implements AutoCloseable {
      *             in cases of network failure
      * @throws IllegalArgumentException
      *             if an invalid chroot path is specified
-     */
+     */ //zookeeper的构造器
     public ZooKeeper(
         String connectString,
         int sessionTimeout,
         Watcher watcher,
         boolean canBeReadOnly) throws IOException {
+        // createDefaultHostProvider() 解析给出的server的址址，并对解析结果进行第一次shuffle打散
         this(connectString, sessionTimeout, watcher, canBeReadOnly, createDefaultHostProvider(connectString));
     }
 
@@ -1132,6 +1135,8 @@ public class ZooKeeper implements AutoCloseable {
 
     // default hostprovider
     private static HostProvider createDefaultHostProvider(String connectString) {
+        // ConnectStringParser() 用于解析指定的server地址列表字符串
+        // getServerAddresses() 获取所有解析出来的地址即可
         return new StaticHostProvider(new ConnectStringParser(connectString).getServerAddresses());
     }
 

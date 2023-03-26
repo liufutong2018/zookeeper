@@ -85,14 +85,16 @@ public final class ConnectStringParser {
                     host = host.substring(0, pidx);
                 }
             }
+            //将当前遍历的字符串解析出的host与port构建为一个地址，写入到缓存集合serverAddresses
             serverAddresses.add(InetSocketAddress.createUnresolved(host, port));
-        }
+        } //for-end
     }
 
     public String getChrootPath() {
         return chrootPath;
     }
 
+    // 获取所有解析出来的地址 
     public ArrayList<InetSocketAddress> getServerAddresses() {
         return serverAddresses;
     }

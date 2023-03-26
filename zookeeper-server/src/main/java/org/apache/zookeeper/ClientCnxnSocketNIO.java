@@ -243,6 +243,7 @@ public class ClientCnxnSocketNIO extends ClientCnxnSocket {
     SocketChannel createSock() throws IOException {
         SocketChannel sock;
         sock = SocketChannel.open();
+        // 设置Channel为非阻塞的，即NIO的
         sock.configureBlocking(false);
         sock.socket().setSoLinger(false, -1);
         sock.socket().setTcpNoDelay(true);
@@ -256,17 +257,22 @@ public class ClientCnxnSocketNIO extends ClientCnxnSocket {
      * @throws IOException
      */
     void registerAndConnect(SocketChannel sock, InetSocketAddress addr) throws IOException {
+        // 将channel注册到selector，并指定其关注事件为客户端连接发起成功
         sockKey = sock.register(selector, SelectionKey.OP_CONNECT);
+        // 连接指定地址
         boolean immediateConnect = sock.connect(addr);
         if (immediateConnect) {
             sendThread.primeConnection();
         }
     }
 
+    // 连接
     @Override
     void connect(InetSocketAddress addr) throws IOException {
+        // 创建一个channel
         SocketChannel sock = createSock();
         try {
+            // 将channel注册到selector
             registerAndConnect(sock, addr);
         } catch (UnresolvedAddressException | UnsupportedAddressTypeException | SecurityException | IOException e) {
             LOG.error("Unable to open socket to {}", addr);
