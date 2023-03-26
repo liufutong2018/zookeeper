@@ -58,6 +58,7 @@ public class SessionTrackerImpl extends ZooKeeperCriticalThread implements Sessi
         SessionImpl(long sessionId, int timeout) {
             this.sessionId = sessionId;
             this.timeout = timeout;
+            // 会话关闭标识
             isClosing = false;
         }
 
@@ -110,10 +111,13 @@ public class SessionTrackerImpl extends ZooKeeperCriticalThread implements Sessi
     public SessionTrackerImpl(SessionExpirer expirer, ConcurrentMap<Long, Integer> sessionsWithTimeout, int tickTime, long serverId, ZooKeeperServerListener listener) {
         super("SessionTracker", listener);
         this.expirer = expirer;
+        // 创建并初始化会话过期队列
         this.sessionExpiryQueue = new ExpiryQueue<SessionImpl>(tickTime);
         this.sessionsWithTimeout = sessionsWithTimeout;
         this.nextSessionId.set(initializeNextSessionId(serverId));
+        // 遍历磁盘中存放的session
         for (Entry<Long, Integer> e : sessionsWithTimeout.entrySet()) {
+            // sessionsWithTimeout 是一个map，key为sessionId，value为该会话对应的timeout
             trackSession(e.getKey(), e.getValue());
         }
 
@@ -195,6 +199,7 @@ public class SessionTrackerImpl extends ZooKeeperCriticalThread implements Sessi
 
     private void updateSessionExpiry(SessionImpl s, int timeout) {
         logTraceTouchSession(s.sessionId, timeout, "");
+        // 更新过期时间
         sessionExpiryQueue.update(s, timeout);
     }
 
@@ -268,6 +273,7 @@ public class SessionTrackerImpl extends ZooKeeperCriticalThread implements Sessi
     public synchronized boolean trackSession(long id, int sessionTimeout) {
         boolean added = false;
 
+        // 从缓存map中获取当前指定id的session，若为null，则创建一个
         SessionImpl session = sessionsById.get(id);
         if (session == null) {
             session = new SessionImpl(id, sessionTimeout);
@@ -292,7 +298,7 @@ public class SessionTrackerImpl extends ZooKeeperCriticalThread implements Sessi
                 "SessionTrackerImpl --- " + actionStr
                 + " session 0x" + Long.toHexString(id) + " " + sessionTimeout);
         }
-
+        // 从磁盘来的，更新session的过期时间
         updateSessionExpiry(session, sessionTimeout);
         return added;
     }

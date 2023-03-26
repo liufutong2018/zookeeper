@@ -701,6 +701,7 @@ public class ZooKeeperServer implements SessionExpirer, ServerStats.Provider {
         }
     }
 
+    // zk启动时会在服务端创建一个单例的zooKeeperServer实例并调用该方法
     public synchronized void startup() {
         startupWithServerState(State.RUNNING);
     }
@@ -715,12 +716,15 @@ public class ZooKeeperServer implements SessionExpirer, ServerStats.Provider {
     }
 
     private void startupWithServerState(State state) {
+        // 若sessionTracker为null，则创建一个
         if (sessionTracker == null) {
             createSessionTracker();
         }
+        // 开启sessionTracker线程，即调用该线程的run()
         startSessionTracker();
         setupRequestProcessors();
 
+        // 启动请求流控器线程，即调用该线程的run()
         startRequestThrottler();
 
         registerJMX();
@@ -776,7 +780,10 @@ public class ZooKeeperServer implements SessionExpirer, ServerStats.Provider {
     }
 
     protected void createSessionTracker() {
-        sessionTracker = new SessionTrackerImpl(this, zkDb.getSessionWithTimeOuts(), tickTime, createSessionTrackerServerId, getZooKeeperServerListener());
+        sessionTracker = new SessionTrackerImpl(this, 
+                                                zkDb.getSessionWithTimeOuts(), //从磁盘中获取具有（超时时限）timeout的所有session会话
+                                                tickTime, 
+                                                createSessionTrackerServerId, getZooKeeperServerListener());
     }
 
     protected void startSessionTracker() {

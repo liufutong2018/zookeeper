@@ -1217,6 +1217,7 @@ public class ClientCnxn {
                         startConnect(serverAddress);
                         // Update now to start the connection timer right after we make a connection attempt
                         clientCnxnSocket.updateNow();
+                        // 更新交互(连接请求/读写请求)时间戳
                         clientCnxnSocket.updateLastSendAndHeard();
                     }
 
@@ -1253,17 +1254,20 @@ public class ClientCnxn {
                                 }
                             }
                         }
+                        // 连接成功，获取已经有多久没有收到交互响应了
                         to = readTimeout - clientCnxnSocket.getIdleRecv();
                     } else {
+                        // 连接失败，获取已经多久没有收到连接请求的响应了
                         to = connectTimeout - clientCnxnSocket.getIdleRecv();
                     }
 
-                    if (to <= 0) {
+                    if (to <= 0) { //处理会话超时
                         String warnInfo = String.format(
                             "Client session timed out, have not heard from server in %dms for session id 0x%s",
                             clientCnxnSocket.getIdleRecv(),
                             Long.toHexString(sessionId));
                         LOG.warn(warnInfo);
+                        // 抛出异常
                         throw new SessionTimeoutException(warnInfo);
                     }
                     if (state.isConnected()) {
